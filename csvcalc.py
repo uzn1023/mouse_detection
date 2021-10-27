@@ -7,9 +7,10 @@ import pandas as pd
 from matplotlib import gridspec
 
 Threshold = 300
-bout = 0
+bout = 0.25
 
-df = pd.read_csv('./result/20211021/green_long.csv',names=("time","move"),skiprows=1)
+filename = "./result/20211021/green_long"
+df = pd.read_csv(filename + '.csv',names=("time","move"),skiprows=1)
 #plt.plot(df.time,df.move)
 #plt.show()
 df["bin"] = 0
@@ -53,5 +54,7 @@ for j in range(len(df_freeze.start)):
         ax2.axvspan(df_freeze.iat[j,0], df_freeze.iat[j,1], color="white")
     #ax2.axvspan(df_freeze.iat[j,1], df.iat[i,0], color="white")
 ax2.set_xlabel("Time [s]")
-plt.savefig("./result/20211021/green_long.png")
+plt.savefig(filename + "_bout"+str(bout)+".png")
 plt.show()
+
+df_freeze.to_csv(filename + "_duration.csv")
