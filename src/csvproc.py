@@ -42,7 +42,7 @@ def proc(csv_in,Threshold,bout):
     ax1.hlines(Threshold, df.iat[0,0], df.iat[i,0], linestyle = "dashed", linewidth = 0.5, color = "red")
     ax1.plot(df.time,df.move, linewidth = 0.5, color = "blue")
     ax1.set_ylabel("Count of moving [px]")
-    ax1.set_title("bout=" + str(bout))
+    ax1.set_title("Thrshold" + str(Threshold) + ", Bout=" + str(bout))
 
     ax2 = fig.add_subplot(spec[1])
 
