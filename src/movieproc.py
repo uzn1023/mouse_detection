@@ -53,7 +53,7 @@ def proc(movie,outdir):
         return bin_out,img_out
 
     #for i in tqdm.tqdm(range(frame_count)):
-    for i in tqdm.tqdm(range(600)): # テスト用　最初の１分だけ読み取る
+    for i in tqdm.tqdm(range(600)): # テスト用　最初の短時間だけ読み取る
         ret, frame = cap.read()
         bin_mouse, img_out = img_proc(frame)
         
