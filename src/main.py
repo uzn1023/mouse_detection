@@ -1,4 +1,6 @@
 ##!/usr/bin/env python
+import copy
+import io
 import os
 import tkinter as tk
 import tkinter.filedialog
@@ -21,15 +23,25 @@ def runmovie(moviename):
 
     sg.theme('Black')
 
-    layout = [    [sg.Image(filename='', key='-image-')],
+    layout = [    [sg.Image(filename='', key='-graph-'), sg.Image(filename='', key='-image-')],
                   [sg.Slider(range=(0, num_frames),size=(50, 10), orientation='h', key='-slider-')],
                   [sg.Button('Exit', size=(7, 1), font='Helvetica 14')]]
 
-    window = sg.Window('　動画ファイルを再生するアプリ　', layout, no_titlebar=False, location=(0, 0), resizable=True)
+    window = sg.Window('MouseDitection', layout, no_titlebar=False, location=(0, 0), resizable=True)
 
     image_elem = window['-image-']
     slider_elem = window['-slider-']
 
+    window.read(timeout=0)
+    fig = plt.figure()
+    fig.canvas.draw()
+    fig,ax1,ax2 = csvproc.proc(csv_out,1000,0.25,fig)
+    ax1.axvline(x=0,color="g")
+    ax2.axvline(x=0,color="g")
+    item = io.BytesIO()
+    fig.savefig(item, format='png') 
+    window['-graph-'].update(data=item.getvalue())
+    
     cur_frame = 0
     while vidFile.isOpened():
         # イベントを取得
@@ -44,8 +56,8 @@ def runmovie(moviename):
 
         #　データが不足している場合は、ループを停止させます。
         if not ret:  # if out of data stop looping
-            break
-
+            vidFile.set(cv2.CAP_PROP_POS_FRAMES, 0)
+            continue
         #　スライダーを手動で動かした場合は、指定したフレームにジャンプします
         if int(values['-slider-']) != cur_frame-1:
             cur_frame = int(values['-slider-'])
@@ -68,6 +80,8 @@ def runmovie(moviename):
         imgbytes = cv2.imencode('.png', frame)[1].tobytes()
         image_elem.update(data=imgbytes)
 
+
+
 programname = "MouseDitection"
 root = tk.Tk()
 root.withdraw()
@@ -77,6 +91,5 @@ movie = tkinter.filedialog.askopenfilename(filetypes = fTyp, initialdir = "..")
 tkinter.messagebox.showinfo(programname,'Please select output folder.')
 outdir = tkinter.filedialog.askdirectory(initialdir = "..")
 
-runmovie(movie)
-
 csv_out = movieproc.proc(movie,outdir)    # mouse ditection and calclate moving -> csv file
+runmovie(movie)
