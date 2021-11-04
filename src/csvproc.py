@@ -7,7 +7,7 @@ import pandas as pd
 from matplotlib import gridspec
 
 
-def proc(csv_in,Threshold,bout):
+def proc(csv_in,Threshold,bout,fig):
     df = pd.read_csv(csv_in,names=("time","move"),skiprows=1)
     #plt.plot(df.time,df.move)
     #plt.show()
@@ -36,7 +36,6 @@ def proc(csv_in,Threshold,bout):
 
     #df_freeze.to_csv(filename + "_duration.csv")
 
-    fig = plt.figure()
     spec = gridspec.GridSpec(ncols = 1, nrows = 2, height_ratios=[3, 1])
     ax1 = fig.add_subplot(spec[0])
     ax1.hlines(Threshold, df.iat[0,0], df.iat[i,0], linestyle = "dashed", linewidth = 0.5, color = "red")
@@ -53,8 +52,7 @@ def proc(csv_in,Threshold,bout):
             ax2.axvspan(df_freeze.iat[j,0], df_freeze.iat[j,1], color="white")
         #ax2.axvspan(df_freeze.iat[j,1], df.iat[i,0], color="white")
     ax2.set_xlabel("Time [s]")
-    return fig
-
+    plt.pause(0.1)
+    fig.clear()
 #plt.savefig(filename + "_bout"+str(bout)+".png")
 #plt.show()
-

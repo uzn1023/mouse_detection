@@ -11,13 +11,6 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import csvproc
 import movieproc
 
-
-def plotgraph(Threshold,bout,csv_out):
-    plt.close()
-    fig = csvproc.proc(csv_out,Threshold,bout)
-    plt.pause(0.01)
-
-
 programname = "MouseDitection"
 root = tk.Tk()
 root.title('Input parameters')
@@ -56,7 +49,8 @@ sp2.grid_configure(padx=10, pady=15)
 frame = ttk.Frame(root)
 frame.grid(row=3,column=2)
 frame.grid_configure(padx=10, pady=15)
-button = tk.Button(frame, text="Calculate", command=lambda:plotgraph(var.get(),var2.get(),csv_out))
+fig = plt.figure()
+button = tk.Button(frame, text="Calculate", command=lambda:csvproc.proc(csv_out,var.get(),var2.get(),fig))
 #button = tk.Button(frame, text="Calculate", command=lambda:print(var2.get()))
 button.grid()
 
