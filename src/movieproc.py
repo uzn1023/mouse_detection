@@ -5,6 +5,7 @@ import os
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
+import PySimpleGUI as sg
 import tqdm
 
 
@@ -52,6 +53,11 @@ def proc(movie,outdir):
         bin_out[labels == max_idx, ] = 255
         return bin_out,img_out
 
+    sg.theme('Black')
+    BAR_MAX = frame_count
+    layout = [[sg.Text('Loading video ...')],
+          [sg.ProgressBar(BAR_MAX, orientation='h', size=(50,20), key='-PROG-')],]
+    window = sg.Window('Progres', layout)
     for i in tqdm.tqdm(range(frame_count)):
     #for i in tqdm.tqdm(range(600)): # テスト用　最初の短時間だけ読み取る
         ret, frame = cap.read()
@@ -80,11 +86,14 @@ def proc(movie,outdir):
             writer.write(img_out)
         if i % divider == 0:
             bin_mouse_old = bin_mouse
+        window.read(timeout=0)
+        window['-PROG-'].update(i+1)
     
     writer.release()
     cap.release()
     cv2.destroyAllWindows()
     f.close()
+    window.close()
     return os.path.join(outdir,"moving.csv")
 
 if __name__=='__main__':

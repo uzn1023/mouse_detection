@@ -22,10 +22,13 @@ def runmovie(moviename):
     fps = vidFile.get(cv2.CAP_PROP_FPS)
 
     sg.theme('Black')
+    column = [sg.Text('Parameters', justification='center', size=(15, 1), background_color='#F7F3EC', text_color='#000')],\
+             [sg.Text('Bout',size=(7,1), background_color='#F7F3EC', text_color='#000'),sg.Spin(values=('0.00', '0.25', '0.50', '1.00', '2.00'), initial_value='0.25', key='Bout')],\
+             [sg.Text('Threshold',size=(7,1), background_color='#F7F3EC', text_color='#000'),sg.Spin([x*100 for x in range(100)], 500, key='Threshold')]
 
-    layout = [    [sg.Image(filename='', key='-graph-'), sg.Image(filename='', key='-image-')],
-                  [sg.Slider(range=(0, num_frames),size=(50, 10), orientation='h', key='-slider-')],
-                  [sg.Button('Exit', size=(7, 1), font='Helvetica 14')]]
+    layout = [    [sg.Column(column, background_color='#F7F3EC'),sg.Image(filename='', key='-graph-'), sg.Image(filename='', key='-image-')],
+                  [sg.Slider(range=(0, num_frames),size=(50, 10), orientation='h', key='-slider-'),sg.Button('STOP/PLAY', size=(10, 1), font='Helvetica 14')],
+                  [sg.Button('Exit', size=(10, 1), font='Helvetica 14')]]
 
     window = sg.Window('MouseDitection', layout, no_titlebar=False, location=(0, 0), resizable=True)
 
@@ -34,15 +37,22 @@ def runmovie(moviename):
     graph_elem = window['-graph-']
 
     window.read(timeout=0)
-    fig = plt.figure()
-    
-    fig.canvas.draw()
-    fig,ax1,ax2 = csvproc.proc(csv_out,1000,0.25,fig)
-    item = io.BytesIO()
-    fig.savefig(item, format='png') 
-    graph_elem.update(data=item.getvalue())
-    fig.savefig(os.path.join(outdir,"pic.png"))
+    Threshold = 500
+    Bout = 0.25
+    def graph_renew():
+        fig = plt.figure()
+        fig.canvas.draw()
+        fig,ax1,ax2 = csvproc.proc(csv_out,Threshold,Bout,fig)
+        item = io.BytesIO()
+        fig.savefig(item, format='png') 
+        graph_elem.update(data=item.getvalue())
+        figname = "graph_Threshold"+str(Threshold)+"_Bout"+str(Bout)+".png"
+        fig.savefig(os.path.join(outdir,figname))
+        fig.savefig(os.path.join(outdir,"pic.png"))
+    graph_renew()
+
     cur_frame = 0
+    play_flag = 1
     while vidFile.isOpened():
         # イベントを取得
         event, values = window.read(timeout=0)
@@ -63,6 +73,16 @@ def runmovie(moviename):
             cur_frame = int(values['-slider-'])
             vidFile.set(cv2.CAP_PROP_POS_FRAMES, cur_frame)
 
+        if event in ('STOP/PLAY', None):
+            if play_flag == 1:
+                play_flag = 0
+            else:
+                play_flag = 1
+        
+        if Threshold != int(values['Threshold']) or Bout != float(values['Bout']):
+            Threshold = int(values['Threshold'])
+            Bout = float(values['Bout'])
+            graph_renew()
         #　スライダー表示を更新
         slider_elem.update(cur_frame)
         cur_frame += 1
@@ -87,7 +107,7 @@ def runmovie(moviename):
         graph = cv2.line(graph,(x,343),(x,427),(0,255,0),2)
         imgbytes_graph = cv2.imencode('.png',graph)[1].tobytes()
         graph_elem.update(data=imgbytes_graph)
-
+        
 programname = "MouseDitection"
 root = tk.Tk()
 root.withdraw()
