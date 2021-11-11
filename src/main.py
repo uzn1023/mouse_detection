@@ -31,17 +31,17 @@ def runmovie(moviename):
 
     image_elem = window['-image-']
     slider_elem = window['-slider-']
+    graph_elem = window['-graph-']
 
     window.read(timeout=0)
     fig = plt.figure()
+    
     fig.canvas.draw()
     fig,ax1,ax2 = csvproc.proc(csv_out,1000,0.25,fig)
-    ax1.axvline(x=0,color="g")
-    ax2.axvline(x=0,color="g")
     item = io.BytesIO()
     fig.savefig(item, format='png') 
-    window['-graph-'].update(data=item.getvalue())
-    
+    graph_elem.update(data=item.getvalue())
+    fig.savefig(os.path.join(outdir,"pic.png"))
     cur_frame = 0
     while vidFile.isOpened():
         # イベントを取得
@@ -80,7 +80,13 @@ def runmovie(moviename):
         imgbytes = cv2.imencode('.png', frame)[1].tobytes()
         image_elem.update(data=imgbytes)
 
-
+        # Write time bar on the graph
+        graph = cv2.imread(os.path.join(outdir,"pic.png"))
+        x = int(101 + (cur_frame / vidFile.get(cv2.CAP_PROP_FRAME_COUNT)) * (553 - 101))
+        graph = cv2.line(graph,(x,58),(x,310),(0,255,0),2)
+        graph = cv2.line(graph,(x,343),(x,427),(0,255,0),2)
+        imgbytes_graph = cv2.imencode('.png',graph)[1].tobytes()
+        graph_elem.update(data=imgbytes_graph)
 
 programname = "MouseDitection"
 root = tk.Tk()
