@@ -15,6 +15,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 import csvproc
 import movieproc
+import setparam
 
 
 def runmovie(moviename):
@@ -123,5 +124,6 @@ movie = tkinter.filedialog.askopenfilename(filetypes = fTyp, initialdir = "..")
 tkinter.messagebox.showinfo(programname,'Please select output folder.')
 outdir = tkinter.filedialog.askdirectory(initialdir = "..")
 
-csv_out = movieproc.proc(movie,outdir)    # mouse ditection and calclate moving -> csv file
+mc_up, x, y, r = setparam.setparam(movie)
+csv_out = movieproc.proc(movie, outdir, mc_up, x, y, r)    # mouse ditection and calclate moving -> csv file
 runmovie(movie)

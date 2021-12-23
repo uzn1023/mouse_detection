@@ -9,7 +9,7 @@ import PySimpleGUI as sg
 import tqdm
 
 
-def proc(movie,outdir):
+def proc(movie, outdir, mc_up, x, y, r):
     cap = cv2.VideoCapture(movie)
 
     divider = 1
@@ -18,11 +18,11 @@ def proc(movie,outdir):
     writer_csv.writerow(["time[s]","amount of movement[px]"])
     frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
-    def img_proc(img):
+    def img_proc(img, mc_up, x, y, r):
         h,w = img.shape[:2]
         # Mask for mouse (black region)
         lower = np.array(0, dtype=np.uint8)
-        upper = np.array(20, dtype=np.uint8)
+        upper = np.array(mc_up, dtype=np.uint8)
         mask_mouse = cv2.inRange(img, lower, upper)
         # Mask for cable (white region) 
         lower = np.array(230, dtype=np.uint8)
@@ -30,7 +30,7 @@ def proc(movie,outdir):
         mask_cable = cv2.inRange(img, lower, upper)
         # Mask for inCage region
         mask_cage = np.zeros((h,w),dtype=np.uint8)
-        x, y, r = 175, 100, 125
+        # x, y, r = 175, 100, 125
         cv2.circle(mask_cage,center=(x,y),radius=r,color=255,thickness=-1)
 
         mask_mouse[mask_cage == 0] = 0  # Exclude out of cage
@@ -45,7 +45,9 @@ def proc(movie,outdir):
         mask_mouse[labels == max_idx, ] = 255
         mask_mouse[labels != max_idx, ] = 0
         mask_mouse = cv2.erode(mask_mouse,np.ones((5,5),np.uint8),iterations = 1)   # Recovering from dilate
-
+        # for debug
+        #cv2.imshow("test_4_3.png", mask_mouse)
+        #cv2.waitKey(0)
         return mask_mouse, mask_cable
 
     sg.theme('Black')
@@ -56,7 +58,7 @@ def proc(movie,outdir):
     for i in tqdm.tqdm(range(frame_count)):
     #for i in tqdm.tqdm(range(600)): # テスト用　最初の短時間だけ読み取る
         ret, frame = cap.read()
-        mask_mouse,mask_cable = img_proc(frame)
+        mask_mouse,mask_cable = img_proc(frame, mc_up, x, y, r)
         
         if (i > 0) and (i % divider == 0):
             # Taking difference of mouse region
