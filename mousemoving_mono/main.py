@@ -120,9 +120,9 @@ root = tk.Tk()
 root.withdraw()
 fTyp = [("","*.mp4, *.avi")]
 tkinter.messagebox.showinfo(programname,'Please select video file.')
-movie = tkinter.filedialog.askopenfilename(filetypes = fTyp, initialdir = "..")
+movie = tkinter.filedialog.askopenfilename(filetypes = fTyp, initialdir = "~")
 tkinter.messagebox.showinfo(programname,'Please select output folder.')
-outdir = tkinter.filedialog.askdirectory(initialdir = "..")
+outdir = tkinter.filedialog.askdirectory(initialdir = "~")
 
 mc_up, x, y, r = setparam.setparam(movie)
 csv_out = movieproc.proc(movie, outdir, mc_up, x, y, r)    # mouse ditection and calclate moving -> csv file
