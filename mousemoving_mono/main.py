@@ -29,7 +29,7 @@ def runmovie(moviename):
              [sg.Text('Threshold',size=(7,1), background_color='#F7F3EC', text_color='#000'),sg.Spin([x*100 for x in range(100)], 500, key='Threshold')]
 
     layout = [    [sg.Column(column, background_color='#F7F3EC'),sg.Image(filename='', key='-graph-'), sg.Image(filename='', key='-image-')],
-                  [sg.Slider(range=(0, num_frames),size=(50, 10), orientation='h', key='-slider-'),sg.Button('STOP/PLAY', size=(10, 1), font='Helvetica 14')],
+                  [sg.Slider(range=(0, num_frames),size=(50, 10), orientation='h', key='-slider-'),sg.Button('STOP/PLAY', size=(10, 1), font='Helvetica 14'),sg.Button('SAVE', size=(10, 1), font='Helvetica 14'),sg.Button('ZOOMABLE', size=(10, 1), font='Helvetica 14')],
                   [sg.Button('Exit', size=(10, 1), font='Helvetica 14')]]
 
     window = sg.Window('MouseDitection', layout, no_titlebar=False, location=(0, 0), resizable=True)
@@ -48,13 +48,15 @@ def runmovie(moviename):
         item = io.BytesIO()
         fig.savefig(item, format='png') 
         graph_elem.update(data=item.getvalue())
-        figname = "graph_Threshold"+str(Threshold)+"_Bout"+str(Bout)+".png"
-        fig.savefig(os.path.join(outdir,figname))
+        #figname = "graph_Threshold"+str(Threshold)+"_Bout"+str(Bout)+".png"
+        #fig.savefig(os.path.join(outdir,figname))
         fig.savefig(os.path.join(outdir,"pic.png"))
-    graph_renew()
+        return fig
+    fig = graph_renew()
 
     cur_frame = 0
     play_flag = 1
+    zoom_flag = 0
     while vidFile.isOpened():
         # イベントを取得
         event, values = window.read(timeout=0)
@@ -80,13 +82,22 @@ def runmovie(moviename):
                 play_flag = 0
             else:
                 play_flag = 1
-        
+        # グラフの画像保存: 別ウィンドウで保存ダイアログを表示し保存
+        if event in ('SAVE', None):
+            root = tk.Tk()
+            root.withdraw()
+            root.filename =  tkinter.filedialog.asksaveasfilename(initialdir = "outdir",title = "Save as",filetypes =  [("img file","*.png")])
+            fig.savefig(os.path.join(outdir,root.filename))
+
+        if event in ('ZOOMABLE', None):
+            plt.show(block=False)
+
         if Threshold != int(values['Threshold']) or Bout != float(values['Bout']):
             Threshold = int(values['Threshold'])
             Bout = float(values['Bout'])
-            graph_renew()
+            fig = graph_renew()
         
-                # Write time bar on the graph
+        # Write time bar on the graph
         graph = cv2.imread(os.path.join(outdir,"pic.png"))
         x = int(101 + (cur_frame / vidFile.get(cv2.CAP_PROP_FRAME_COUNT)) * (553 - 101))
         graph = cv2.line(graph,(x,58),(x,310),(0,255,0),2)

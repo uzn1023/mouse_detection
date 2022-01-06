@@ -43,7 +43,7 @@ def proc(csv_in,Threshold,bout,fig):
     ax1.set_ylabel("Count of moving [px]")
     ax1.set_title("Threshold=" + str(Threshold) + ", Bout=" + str(bout))
 
-    ax2 = fig.add_subplot(spec[1])
+    ax2 = fig.add_subplot(spec[1],sharex = ax1)
 
     for j in range(len(df_freeze.start)):
         if df_freeze.iat[j,2] > bout:
