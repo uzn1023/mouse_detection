@@ -52,6 +52,6 @@ def proc(csv_in,Threshold,bout,fig):
     ax2.set_xlabel("Time [s]")
     #plt.pause(0.1)
     #fig.clear()
-    return fig,ax1,ax2
+    return fig, df_freeze
 #plt.savefig(filename + "_bout"+str(bout)+".png")
 #plt.show()
