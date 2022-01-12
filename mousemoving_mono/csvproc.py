@@ -13,6 +13,7 @@ def proc(csv_in,Threshold,bout,fig):
     #plt.show()
     df["bin"] = 0
 
+
     frag_freeze = 0
     df_freeze = pd.DataFrame(index=[],columns=["start","end","long"])
     for i in range(len(df.time)):
@@ -25,8 +26,9 @@ def proc(csv_in,Threshold,bout,fig):
         else:
             if frag_freeze == 1:
                 freeze_end = df.iat[i,0]
-                rec = pd.Series([freeze_start, freeze_end, freeze_end-freeze_start], index = df_freeze.columns)
-                df_freeze = df_freeze.append(rec, ignore_index = True)
+                if freeze_end - freeze_start > bout:
+                    rec = pd.Series([freeze_start, freeze_end, freeze_end-freeze_start], index = df_freeze.columns)
+                    df_freeze = df_freeze.append(rec, ignore_index = True)
             frag_freeze = 0
             
     if frag_freeze == 1:
@@ -46,11 +48,7 @@ def proc(csv_in,Threshold,bout,fig):
     ax2 = fig.add_subplot(spec[1],sharex = ax1)
 
     for j in range(len(df_freeze.start)):
-        if df_freeze.iat[j,2] > bout:
-            ax2.axvspan(df_freeze.iat[j,0], df_freeze.iat[j,1], color="black")
-        else:
-            ax2.axvspan(df_freeze.iat[j,0], df_freeze.iat[j,1], color="white")
-        #ax2.axvspan(df_freeze.iat[j,1], df.iat[i,0], color="white")
+        ax2.axvspan(df_freeze.iat[j,0], df_freeze.iat[j,1], color="black")
     ax2.set_xlabel("Time [s]")
     #plt.pause(0.1)
     #fig.clear()
