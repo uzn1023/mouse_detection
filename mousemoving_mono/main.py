@@ -99,7 +99,7 @@ def runmovie(moviename,moviemask,outdir):
         ret2, frame2 = vidFile2.read()
 
         #　データが不足している場合は、ループを停止させます。
-        if not ret:  # if out of data stop looping
+        if not (ret and ret2):  # if out of data stop looping
             vidFile.set(cv2.CAP_PROP_POS_FRAMES, 0)
             vidFile2.set(cv2.CAP_PROP_POS_FRAMES, 0)
             continue
