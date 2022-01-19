@@ -18,6 +18,11 @@ def proc(movie, outdir, mc_up, x, y, r):
     writer_csv.writerow(["time[s]","amount of movement[px]"])
     frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
+    frame_rate = 30
+    size = ((int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))))
+    fmt = cv2.VideoWriter_fourcc('m', 'p', '4', 'v') 
+    writer = cv2.VideoWriter(os.path.join(outdir,"masked.mp4"), fmt, frame_rate, size) 
+
     def img_proc(img, mc_up, x, y, r):
         h,w = img.shape[:2]
         # Mask for mouse (black region)
@@ -45,10 +50,7 @@ def proc(movie, outdir, mc_up, x, y, r):
         mask_mouse[labels == max_idx, ] = 255
         mask_mouse[labels != max_idx, ] = 0
         mask_mouse = cv2.erode(mask_mouse,np.ones((5,5),np.uint8),iterations = 1)   # Recovering from dilate
-        # for debug
-        #cv2.imshow("test_4_3.png", mask_mouse)
-        #cv2.waitKey(0)
-        return mask_mouse, mask_cable
+        return mask_mouse, mask_cable, mask_cage
 
     sg.theme('Black')
     BAR_MAX = frame_count
@@ -58,13 +60,20 @@ def proc(movie, outdir, mc_up, x, y, r):
     for i in tqdm.tqdm(range(frame_count)):
     #for i in tqdm.tqdm(range(600)): # テスト用　最初の短時間だけ読み取る
         ret, frame = cap.read()
-        mask_mouse,mask_cable = img_proc(frame, mc_up, x, y, r)
-        
+        mask_mouse,mask_cable, mask_cage = img_proc(frame, mc_up, x, y, r)
+        out_frame = np.ones((int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), 3),np.uint8)*255
+        # out_frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2BGR) # 出力フレーム
+        out_frame[mask_mouse > 0] = (255,0,0)
+        out_frame[mask_cable > 0] = (0,255,0)
+        out_frame[mask_cage == 0] = (125,125,125)
         if (i > 0) and (i % divider == 0):
             # Taking difference of mouse region
             img_xor = cv2.bitwise_xor(mask_mouse,mask_mouse_old)
             img_xor[(mask_cable != 0) | (mask_cable_old != 0)] = 0  # ケーブルがマウスの上を動いたことがマウスの動きと判定されるのを防ぐ
 
+            out_frame[img_xor > 0] = (0,0,255)
+            #cv2.imshow("test",out_frame) # デバッグ
+            writer.write(out_frame)
             cnt = cv2.countNonZero(img_xor) # Calculate amount of movement
             writer_csv.writerow([str(i/11),cnt])
 
@@ -81,7 +90,7 @@ def proc(movie, outdir, mc_up, x, y, r):
 
         window.read(timeout=0)
         window['-PROG-'].update(i+1)
-    
+    writer.release()
     cap.release()
     cv2.destroyAllWindows()
     f.close()

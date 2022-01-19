@@ -18,12 +18,17 @@ import csvproc
 import movieproc
 import setparam
 
-def runmovie(moviename,outdir):
+def runmovie(moviename,moviemask,outdir):
     vidFile = cv2.VideoCapture(moviename)
     num_frames = vidFile.get(cv2.CAP_PROP_FRAME_COUNT)
     fps = vidFile.get(cv2.CAP_PROP_FPS)
 
+    vidFile2 = cv2.VideoCapture(moviemask)
+    num_frames2 = vidFile2.get(cv2.CAP_PROP_FRAME_COUNT)
+    fps = vidFile2.get(cv2.CAP_PROP_FPS)
+
     sg.theme('Black')
+
     column = [sg.Text('Parameters', justification='center', size=(15, 1), background_color='#F7F3EC', text_color='#000')],\
              [sg.Text('Bout',size=(7,1), background_color='#F7F3EC', text_color='#000'),sg.Spin(values=('0.00', '0.25', '0.50', '1.00', '2.00'), initial_value='0.25', key='Bout')],\
              [sg.Text('Threshold',size=(7,1), background_color='#F7F3EC', text_color='#000'),sg.Spin([x*100 for x in range(100)], 500, key='Threshold')],\
@@ -31,14 +36,15 @@ def runmovie(moviename,outdir):
              [sg.Text('CSV export', justification='center', size=(15, 1), background_color='#F7F3EC', text_color='#000')],\
              [sg.Text('Interval (sec)',size=(10,1), background_color='#F7F3EC', text_color='#000'),sg.Spin([x*10 for x in range(100)], 60, key='Interval')],\
              [sg.Button('Export', size=(10, 1), font='Helvetica 12')]
-
-    layout = [    [sg.Column(column,background_color='#F7F3EC'),sg.Image(filename='', key='-graph-'), sg.Image(filename='', key='-image-')],
+    column2 = [sg.Image(filename='', key='-image-')], [sg.Image(filename='', key='-image2-')]
+    layout = [    [sg.Column(column,background_color='#F7F3EC'),sg.Image(filename='', key='-graph-'), sg.Column(column2)],
                   [sg.Slider(range=(0, num_frames),size=(50, 10), orientation='h', key='-slider-'),sg.Button('STOP/PLAY', size=(10, 1), font='Helvetica 14'),sg.Button('SAVE', size=(10, 1), font='Helvetica 14'),sg.Button('ZOOMABLE', size=(10, 1), font='Helvetica 14')],
                   [sg.Button('Exit', size=(10, 1), font='Helvetica 14')]]
 
     window = sg.Window('MouseDitection', layout, no_titlebar=False, location=(0, 0), resizable=True)
 
     image_elem = window['-image-']
+    image2_elem = window['-image2-']
     slider_elem = window['-slider-']
     graph_elem = window['-graph-']
 
@@ -90,15 +96,18 @@ def runmovie(moviename,outdir):
 
         #　ビデオファイルからの読み込み
         ret, frame = vidFile.read()
+        ret2, frame2 = vidFile2.read()
 
         #　データが不足している場合は、ループを停止させます。
         if not ret:  # if out of data stop looping
             vidFile.set(cv2.CAP_PROP_POS_FRAMES, 0)
+            vidFile2.set(cv2.CAP_PROP_POS_FRAMES, 0)
             continue
         #　スライダーを手動で動かした場合は、指定したフレームにジャンプします
         if int(values['-slider-']) != cur_frame-1:
             cur_frame = int(values['-slider-'])
             vidFile.set(cv2.CAP_PROP_POS_FRAMES, cur_frame)
+            vidFile2.set(cv2.CAP_PROP_POS_FRAMES, cur_frame)
 
         if event in ('STOP/PLAY', None):
             if play_flag == 1:
@@ -157,9 +166,12 @@ def runmovie(moviename,outdir):
         time.sleep(0.04)
         image_elem.update(data=imgbytes)
 
+        imgbytes2 = cv2.imencode('.png', frame2)[1].tobytes()
+        image2_elem.update(data=imgbytes2)
+
 # 起動画面
 print("<<<MouseFreezingDetection>>>")
-print("Ver. 0.1 : 2022.01.19")
+print("Ver. 0.2 : 2022.01.19")
 print("For monochrome videos")
 
 programname = "MouseDitection"
@@ -173,4 +185,5 @@ outdir = tkinter.filedialog.askdirectory(initialdir = "~")
 
 mc_up, x, y, r = setparam.setparam(movie)
 csv_out = movieproc.proc(movie, outdir, mc_up, x, y, r)    # mouse ditection and calclate moving -> csv file
-runmovie(movie,outdir)
+movie_mask = os.path.join(outdir,"masked.mp4")
+runmovie(movie,movie_mask,outdir)
