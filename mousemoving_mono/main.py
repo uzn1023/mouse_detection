@@ -18,7 +18,6 @@ import csvproc
 import movieproc
 import setparam
 
-
 def runmovie(moviename,outdir):
     vidFile = cv2.VideoCapture(moviename)
     num_frames = vidFile.get(cv2.CAP_PROP_FRAME_COUNT)
@@ -157,6 +156,11 @@ def runmovie(moviename,outdir):
         imgbytes = cv2.imencode('.png', frame)[1].tobytes()
         time.sleep(0.04)
         image_elem.update(data=imgbytes)
+
+# 起動画面
+print("<<<MouseFreezingDetection>>>")
+print("Ver. 0.1 : 2022.01.19")
+print("For monochrome videos")
 
 programname = "MouseDitection"
 root = tk.Tk()
