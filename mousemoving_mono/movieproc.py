@@ -9,7 +9,7 @@ import PySimpleGUI as sg
 import tqdm
 
 
-def proc(movie, outdir, mc_up, x, y, r):
+def proc(movie, outdir, param):
     cap = cv2.VideoCapture(movie)
 
     divider = 1
@@ -23,7 +23,8 @@ def proc(movie, outdir, mc_up, x, y, r):
     fmt = cv2.VideoWriter_fourcc('m', 'p', '4', 'v') 
     writer = cv2.VideoWriter(os.path.join(outdir,"masked.mp4"), fmt, frame_rate, size) 
 
-    def img_proc(img, mc_up, x, y, r):
+    def img_proc(img, param):
+        mc_up, X, Y, W, H, shape = param[0], param[1],param[2],param[3], param[4],param[5]
         h,w = img.shape[:2]
         # Mask for mouse (black region)
         lower = np.array(0, dtype=np.uint8)
@@ -35,8 +36,15 @@ def proc(movie, outdir, mc_up, x, y, r):
         mask_cable = cv2.inRange(img, lower, upper)
         # Mask for inCage region
         mask_cage = np.zeros((h,w),dtype=np.uint8)
-        # x, y, r = 175, 100, 125
-        cv2.circle(mask_cage,center=(x,y),radius=r,color=255,thickness=-1)
+        if shape == "cir":
+            center = (X,Y)
+            axes = (W,H)
+            box = (center, axes, 0)
+            cv2.ellipse(mask_cage,box=box, color=255,thickness=-1)
+        else:
+            pt1 = (int(X-W/2), int(Y-H/2))
+            pt2 = (int(X+W/2), int(Y+H/2))
+            cv2.rectangle(mask_cage, pt1=pt1, pt2=pt2, color=255, thickness=-1)
 
         mask_mouse[mask_cage == 0] = 0  # Exclude out of cage
         # Morphorogy precessing
@@ -46,9 +54,10 @@ def proc(movie, outdir, mc_up, x, y, r):
 
         # Selecting most biggest region (should be mouse region)
         nlabels, labels, stats, centroids = cv2.connectedComponentsWithStats(mask_mouse, 4)
-        max_idx = np.argmax(stats[1:,:], axis=0)[4] + 1
-        mask_mouse[labels == max_idx, ] = 255
-        mask_mouse[labels != max_idx, ] = 0
+        if nlabels > 1:
+            max_idx = np.argmax(stats[1:,:], axis=0)[4] + 1
+            mask_mouse[labels == max_idx, ] = 255
+            mask_mouse[labels != max_idx, ] = 0
         mask_mouse = cv2.erode(mask_mouse,np.ones((5,5),np.uint8),iterations = 1)   # Recovering from dilate
         return mask_mouse, mask_cable, mask_cage
 
@@ -58,11 +67,9 @@ def proc(movie, outdir, mc_up, x, y, r):
           [sg.ProgressBar(BAR_MAX, orientation='h', size=(50,20), key='-PROG-')],]
     window = sg.Window('Progres', layout)
     for i in tqdm.tqdm(range(frame_count)):
-    #for i in tqdm.tqdm(range(600)): # テスト用　最初の短時間だけ読み取る
         ret, frame = cap.read()
-        mask_mouse,mask_cable, mask_cage = img_proc(frame, mc_up, x, y, r)
+        mask_mouse,mask_cable, mask_cage = img_proc(frame,param)
         out_frame = np.ones((int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), 3),np.uint8)*255
-        # out_frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2BGR) # 出力フレーム
         out_frame[mask_mouse > 0] = (255,0,0)
         out_frame[mask_cable > 0] = (0,255,0)
         out_frame[mask_cage == 0] = (125,125,125)
@@ -72,17 +79,11 @@ def proc(movie, outdir, mc_up, x, y, r):
             img_xor[(mask_cable != 0) | (mask_cable_old != 0)] = 0  # ケーブルがマウスの上を動いたことがマウスの動きと判定されるのを防ぐ
 
             out_frame[img_xor > 0] = (0,0,255)
-            #cv2.imshow("test",out_frame) # デバッグ
-            writer.write(out_frame)
             cnt = cv2.countNonZero(img_xor) # Calculate amount of movement
+            writer.write(out_frame)
             writer_csv.writerow([str(i/11),cnt])
 
-            if cnt >= 300:
-                state = "Moving"
-                color_state = (255,0,0)
-            else:
-                state = "Stopping"
-                color_state = (0,255,0)
+
 
         if i % divider == 0:
             mask_mouse_old = mask_mouse
