@@ -9,8 +9,6 @@ from matplotlib import gridspec
 
 def proc(csv_in,Threshold,bout,fig):
     df = pd.read_csv(csv_in,names=("time","move"),skiprows=1)
-    #plt.plot(df.time,df.move)
-    #plt.show()
     frag_freeze = 0
     freeze_start = 0
     df["bin"] = 0   # Freeze/Move判定値代入用
@@ -51,8 +49,6 @@ def proc(csv_in,Threshold,bout,fig):
         rec = pd.Series([freeze_start, freeze_end, freeze_end-freeze_start], index = df_freeze.columns)
         df_freeze = df_freeze.append(rec, ignore_index = True)
 
-    #df_freeze.to_csv(filename + "_duration.csv")
-
     spec = gridspec.GridSpec(ncols = 1, nrows = 2, height_ratios=[3, 1])
     ax1 = fig.add_subplot(spec[0])
     ax1.hlines(Threshold, df.iat[0,0], df.iat[i,0], linestyle = "dashed", linewidth = 0.5, color = "red")
@@ -65,8 +61,5 @@ def proc(csv_in,Threshold,bout,fig):
     for j in range(len(df_freeze.start)):
         ax2.axvspan(df_freeze.iat[j,0], df_freeze.iat[j,1], color="black")
     ax2.set_xlabel("Time [s]")
-    #plt.pause(0.1)
-    #fig.clear()
     return fig, df_freeze, df
-#plt.savefig(filename + "_bout"+str(bout)+".png")
-#plt.show()
+

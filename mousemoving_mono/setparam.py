@@ -62,6 +62,7 @@ def setparam(movie):
         window['frame'].update(data=framebytes)
         window['image'].update(data=imgbytes)
         if event in ('Done', None):
+            window.close()
             break
         param = [mc_up, X, Y, W, H, shape]
     return param

@@ -13,11 +13,12 @@ import cv2
 import matplotlib.pyplot as plt
 import PySimpleGUI as sg
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-
+import numpy as np
 import csvproc
 import movieproc
 import setparam
 FONTSIZE = 'Helvetica 14'
+FONTSIZE2 = 'Helvetica 10'
 def runmovie(moviename,moviemask,outdir):
     vidFile = cv2.VideoCapture(moviename)
     num_frames = vidFile.get(cv2.CAP_PROP_FRAME_COUNT)
@@ -28,15 +29,15 @@ def runmovie(moviename,moviemask,outdir):
     fps2 = vidFile2.get(cv2.CAP_PROP_FPS)
 
     sg.theme('Black')
-    column = [sg.Text('Parameters', justification='center', size=(15, 1), background_color='#F7F3EC', text_color='#000')],\
-             [sg.Text('Bout',size=(7,1), background_color='#F7F3EC', text_color='#000'),sg.Spin(values=('0.00', '0.25', '0.50', '1.00', '2.00'), initial_value='0.25', key='Bout', font=(FONTSIZE))],\
-             [sg.Text('Threshold',size=(7,1), background_color='#F7F3EC', text_color='#000'),sg.Spin([x*100 for x in range(100)], 200, key='Threshold', font=(FONTSIZE))],\
-             [sg.Text('---------------------------', justification='center', size=(15, 1), background_color='#F7F3EC', text_color='#000')],\
-             [sg.Text('CSV export', justification='center', size=(15, 1), background_color='#F7F3EC', text_color='#000')],\
-             [sg.Text('Interval (sec)',size=(10,1), background_color='#F7F3EC', text_color='#000'),sg.Spin([x*10 for x in range(100)], 60, key='Interval', font=(FONTSIZE))],\
+    column = [sg.Text('Parameters', justification='center', size=(15, 1),text_color='#FFFFFF', font=(FONTSIZE))],\
+             [sg.Text('Bout',size=(7,1), text_color='#FFFFFF', font=(FONTSIZE2)),sg.Spin(values=('0.00', '0.25', '0.50', '1.00', '2.00'), initial_value='0.25', key='Bout', font=(FONTSIZE))],\
+             [sg.Text('Threshold',size=(7,1), text_color='#FFFFFF', font=(FONTSIZE2)),sg.Spin([x*100 for x in range(100)], 200, key='Threshold', font=(FONTSIZE))],\
+             [sg.Image(filename='', key='-hist-')],\
+             [sg.Text('CSV export', justification='center', size=(15, 1), text_color='#FFFFFF', font=(FONTSIZE))],\
+             [sg.Text('Interval (sec)',size=(10,1), text_color='#FFFFFF', font=(FONTSIZE2)),sg.Spin([x*10 for x in range(100)], 60, key='Interval', font=(FONTSIZE))],\
              [sg.Button('Export', size=(10, 1), font='Helvetica 12')]
     column2 = [sg.Image(filename='', key='-image-')], [sg.Image(filename='', key='-image2-')]
-    layout = [    [sg.Column(column,background_color='#F7F3EC'),sg.Image(filename='', key='-graph-'), sg.Column(column2)],
+    layout = [    [sg.Column(column),sg.Image(filename='', key='-graph-'), sg.Column(column2)],
                   [sg.Text('0', justification='center', size=(8, 1), text_color='#000', background_color='#FFFFFF', key='-time-', font=(FONTSIZE)), sg.Slider(range=(0, num_frames),size=(40, 10), orientation='h', key='-slider-'), sg.Button('STOP/PLAY', size=(10, 1), font='Helvetica 14'),sg.Button('SAVE', size=(10, 1), font='Helvetica 14'),sg.Button('ZOOMABLE', size=(10, 1), font='Helvetica 14')],
                   [sg.Button('Exit', size=(10, 1), font='Helvetica 14')]]
 
@@ -47,6 +48,7 @@ def runmovie(moviename,moviemask,outdir):
     slider_elem = window['-slider-']
     graph_elem = window['-graph-']
     playtime_elem = window['-time-']
+    hist_elem = window['-hist-']
 
     window.read(timeout=0)
     Threshold = 200
@@ -60,8 +62,6 @@ def runmovie(moviename,moviemask,outdir):
         item = io.BytesIO()
         fig.savefig(item, format='png')
         graph_elem.update(data=item.getvalue())
-        #figname = "graph_Threshold"+str(Threshold)+"_Bout"+str(Bout)+".png"
-        #fig.savefig(os.path.join(outdir,figname))
         fig.savefig(os.path.join(outdir,"pic.png"))
         return fig, df_freeze, df
     # インターバル時間ごとのフリーズ時間を計算
@@ -83,6 +83,22 @@ def runmovie(moviename,moviemask,outdir):
         return df_interval
     fig, df_freeze, df = graph_renew()
 
+    # ヒストグラム描画
+    fig2 = plt.figure(figsize=(3.5,2.5))
+    ax_hist = fig2.add_subplot()
+    move = df["move"]
+    def hist_renew(Threshold):
+        _,bin,patches = ax_hist.hist(move, bins=200, color="red")
+        for i in range(200):
+            if bin[i+1] < Threshold:
+                patches[i].set_facecolor('blue')
+        ax_hist.set_xlabel("Count of moving [px]")
+        ax_hist.set_ylabel("Frequency")
+        item = io.BytesIO()
+        fig2.subplots_adjust(left=0.2,bottom=0.2)
+        fig2.savefig(item, format='png')
+        hist_elem.update(data=item.getvalue())
+    hist_renew(Threshold)
     cur_frame = 0
     play_flag = 1
     zoom_flag = 0
@@ -140,6 +156,7 @@ def runmovie(moviename,moviemask,outdir):
                 Bout = float(values['Bout'])
                 plt.close()
                 fig,_,df = graph_renew()
+                hist_renew(Threshold)
         except ValueError: # 数値以外が入力された場合の例外処理
             pass
 
@@ -160,8 +177,6 @@ def runmovie(moviename,moviemask,outdir):
         playtime_elem.update(str(cur_time) + " s")
         cur_frame += 1
 
-        #　カメラ映像を圧縮して、画像表示画面'-image-'を更新する
-        #frame = cv2.resize(frame,(int(frame.shape[1] / 3),int(frame.shape[0] / 3)))
         secs = cur_frame // 11
         sec = secs % 60
         mins = secs // 60
@@ -187,7 +202,7 @@ def runmovie(moviename,moviemask,outdir):
 
 # 起動画面
 print("<<<MouseFreezingDetection>>>")
-print("Ver. 0.3 : 2022.02.03")
+print("Ver. 0.4 : 2022.02.10")
 print("For monochrome videos")
 
 programname = "MouseDitection"
