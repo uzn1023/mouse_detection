@@ -65,6 +65,8 @@ def setparam(movie):
             break
         param = [mc_up, X, Y, W, H, shape]
     return param
+if __name__ == '__main__':
+    setparam(r"E:\SSG_Share_1\Uezono\data\monochro\nV54_ptskC_Video.avi")
 
 
 

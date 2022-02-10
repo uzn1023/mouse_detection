@@ -17,7 +17,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import csvproc
 import movieproc
 import setparam
-
+FONTSIZE = 'Helvetica 14'
 def runmovie(moviename,moviemask,outdir):
     vidFile = cv2.VideoCapture(moviename)
     num_frames = vidFile.get(cv2.CAP_PROP_FRAME_COUNT)
@@ -29,15 +29,15 @@ def runmovie(moviename,moviemask,outdir):
 
     sg.theme('Black')
     column = [sg.Text('Parameters', justification='center', size=(15, 1), background_color='#F7F3EC', text_color='#000')],\
-             [sg.Text('Bout',size=(7,1), background_color='#F7F3EC', text_color='#000'),sg.Spin(values=('0.00', '0.25', '0.50', '1.00', '2.00'), initial_value='0.25', key='Bout')],\
-             [sg.Text('Threshold',size=(7,1), background_color='#F7F3EC', text_color='#000'),sg.Spin([x*100 for x in range(100)], 200, key='Threshold')],\
+             [sg.Text('Bout',size=(7,1), background_color='#F7F3EC', text_color='#000'),sg.Spin(values=('0.00', '0.25', '0.50', '1.00', '2.00'), initial_value='0.25', key='Bout', font=(FONTSIZE))],\
+             [sg.Text('Threshold',size=(7,1), background_color='#F7F3EC', text_color='#000'),sg.Spin([x*100 for x in range(100)], 200, key='Threshold', font=(FONTSIZE))],\
              [sg.Text('---------------------------', justification='center', size=(15, 1), background_color='#F7F3EC', text_color='#000')],\
              [sg.Text('CSV export', justification='center', size=(15, 1), background_color='#F7F3EC', text_color='#000')],\
-             [sg.Text('Interval (sec)',size=(10,1), background_color='#F7F3EC', text_color='#000'),sg.Spin([x*10 for x in range(100)], 60, key='Interval')],\
+             [sg.Text('Interval (sec)',size=(10,1), background_color='#F7F3EC', text_color='#000'),sg.Spin([x*10 for x in range(100)], 60, key='Interval', font=(FONTSIZE))],\
              [sg.Button('Export', size=(10, 1), font='Helvetica 12')]
     column2 = [sg.Image(filename='', key='-image-')], [sg.Image(filename='', key='-image2-')]
     layout = [    [sg.Column(column,background_color='#F7F3EC'),sg.Image(filename='', key='-graph-'), sg.Column(column2)],
-                  [sg.Text('0', justification='center', size=(5, 1), text_color='#000', background_color='#FFFFFF', key='-time-'), sg.Slider(range=(0, num_frames),size=(40, 10), orientation='h', key='-slider-'), sg.Button('STOP/PLAY', size=(10, 1), font='Helvetica 14'),sg.Button('SAVE', size=(10, 1), font='Helvetica 14'),sg.Button('ZOOMABLE', size=(10, 1), font='Helvetica 14')],
+                  [sg.Text('0', justification='center', size=(8, 1), text_color='#000', background_color='#FFFFFF', key='-time-', font=(FONTSIZE)), sg.Slider(range=(0, num_frames),size=(40, 10), orientation='h', key='-slider-'), sg.Button('STOP/PLAY', size=(10, 1), font='Helvetica 14'),sg.Button('SAVE', size=(10, 1), font='Helvetica 14'),sg.Button('ZOOMABLE', size=(10, 1), font='Helvetica 14')],
                   [sg.Button('Exit', size=(10, 1), font='Helvetica 14')]]
 
     window = sg.Window('MouseDitection', layout, no_titlebar=False, location=(0, 0), resizable=True)
@@ -125,17 +125,23 @@ def runmovie(moviename,moviemask,outdir):
             plt.show(block=False)
         # CSV(Bout期間とインターバル)をエクスポート
         if event in('Export'):
-            filename = "freezelist_" + "bout" +str(int(float(values['Bout'])*100)) + "thr" + str(values['Threshold']) + ".csv"
-            df_freeze.to_csv(os.path.join(outdir,filename))
-            df_interval = interval(df_freeze, int(values['Interval']))
-            filename = "interval_" + "bout" +str(int(float(values['Bout'])*100)) + "thr" + str(values['Threshold']) + "intvl" + str(values['Interval']) + ".csv"
-            df_interval.to_csv(os.path.join(outdir,filename))
+            try:
+                filename = "freezelist_" + "bout" +str(int(float(values['Bout'])*100)) + "thr" + str(values['Threshold']) + ".csv"
+                df_freeze.to_csv(os.path.join(outdir,filename))
+                df_interval = interval(df_freeze, int(values['Interval']))
+                filename = "interval_" + "bout" +str(int(float(values['Bout'])*100)) + "thr" + str(values['Threshold']) + "intvl" + str(values['Interval']) + ".csv"
+                df_interval.to_csv(os.path.join(outdir,filename))
+            except ValueError:  # 数値以外が入力された場合の例外処理
+                print("Error Interval is not number")
         # パラメータが変更されたらグラフを更新
-        if Threshold != int(values['Threshold']) or Bout != float(values['Bout']):
-            Threshold = int(values['Threshold'])
-            Bout = float(values['Bout'])
-            plt.close()
-            fig,_,df = graph_renew()
+        try: 
+            if Threshold != int(values['Threshold']) or Bout != float(values['Bout']): 
+                Threshold = int(values['Threshold'])
+                Bout = float(values['Bout'])
+                plt.close()
+                fig,_,df = graph_renew()
+        except ValueError: # 数値以外が入力された場合の例外処理
+            pass
 
         # Write time bar on the graph
         graph = cv2.imread(os.path.join(outdir,"pic.png"))
